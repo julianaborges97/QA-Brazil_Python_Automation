@@ -1,9 +1,11 @@
 
 import json
+import time
 from urllib.request import urlopen
 
 
 def is_url_reachable(url):
+    """Verifica se o servidor Urban Routes está acessível."""
     try:
         with urlopen(url, timeout=10) as response:
             return response.status == 200
@@ -12,37 +14,64 @@ def is_url_reachable(url):
 
 
 def retrieve_phone_code(driver):
-    logs = driver.get_log("performance")
+    """Recupera o código SMS dos logs de rede do Chrome."""
 
-    for log in logs:
+    pending_requests = {}
+
+    for _ in range(15):
         try:
-            message = json.loads(log["message"])["message"]
+            logs = driver.get_log("performance")
 
-            if message.get("method") != "Network.responseReceived":
-                continue
+            for log in logs:
+                try:
+                    message = json.loads(log["message"])["message"]
+                    method = message.get("method")
+                    params = message.get("params", {})
 
-            params = message.get("params", {})
-            response = params.get("response", {})
-            url = response.get("url", "")
+                    if method == "Network.responseReceived":
+                        request_id = params.get("requestId")
+                        response = params.get("response", {})
+                        url = response.get("url", "")
 
-            if "phone" not in url.lower():
-                continue
+                        if request_id:
+                            pending_requests[request_id] = url
 
-            request_id = params.get("requestId")
+                    elif method == "Network.loadingFinished":
+                        request_id = params.get("requestId")
 
-            body = driver.execute_cdp_cmd(
-                "Network.getResponseBody",
-                {"requestId": request_id}
-            )
+                        if request_id not in pending_requests:
+                            continue
 
-            data_response = json.loads(body["body"])
+                        try:
+                            result = driver.execute_cdp_cmd(
+                                "Network.getResponseBody",
+                                {"requestId": request_id}
+                            )
 
-            if "code" in data_response:
-                return str(data_response["code"])
+                            body_text = result.get("body", "")
 
-        except (KeyError, ValueError, TypeError):
-            continue
+                            if not body_text:
+                                continue
+
+                            body_data = json.loads(body_text)
+
+                            if (
+                                isinstance(body_data, dict)
+                                and "code" in body_data
+                            ):
+                                return str(body_data["code"])
+
+                        except Exception:
+                            continue
+
+                except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+                    continue
+
+        except Exception:
+            pass
+
+        time.sleep(1)
 
     raise RuntimeError(
-        "Código de confirmação não encontrado nos registros do navegador."
+        "Código de confirmação não encontrado nos logs de rede."
     )

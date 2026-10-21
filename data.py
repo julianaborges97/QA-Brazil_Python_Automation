@@ -1,12 +1,12 @@
-URBAN_ROUTES_URL = "https://cnt-fd9ad945-8786-4f6f-9b40-4a2ddf45cda8.containerhub.tripleten-services.com?lng=pt"
+
+URBAN_ROUTES_URL = "https://cnt-1a7ba4a4-70d9-48bf-a65b-efe3216b53dc.containerhub.tripleten-services.com?lng=pt"
 
 ADDRESS_FROM = "East 2nd Street, 601"
 ADDRESS_TO = "1300 1st St"
 
-PHONE_NUMBER = "+1 123 123 12 12"
+PHONE_NUMBER = "+11111111111"
 
-CARD_NUMBER = "1234 5678 9100"
-CARD_CODE = "1111"
+CARD_NUMBER = "123456789100"
+CARD_CODE = "11"
 
 MESSAGE_FOR_DRIVER = "Pare no bar de sucos"
-
